@@ -31,3 +31,6 @@ Get the Ip address in Ubuntu `Hostname -I` or `ip addr | grep -i inet`
 ### give a URL to external service in minikube
 
     minikube service mongo-express-service
+
+
+Mongo-express defautl credentials: admin:pass
