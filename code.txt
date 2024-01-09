@@ -1,0 +1,132 @@
+
+    @Test
+    public void testMap(){
+        HashMap<String, String> mapInput=  new HashMap<>();
+        mapInput.put("name", "David");
+        mapInput.put("email", "test@gmail");
+        mapInput.put("age", "30");
+
+        int size = mapInput.size();
+        System.out.println(size);
+
+        String name = mapInput.get("name");
+        System.out.println(name);
+
+        for(Map.Entry<String, String> each: mapInput.entrySet()){
+            System.out.println(each.getKey()+ " -------> "+each.getValue());
+        }
+
+    }
+
+    @Test
+    public  void dateTest() {
+        LocalDate today = LocalDate.now();//LocalDate.of(2020, 5, 5);
+        System.out.println("Today: "+today);
+
+        System.out.println("Added  business days "+addBusinessDays(today, 5, Optional.empty()));
+
+        // Add one holiday for testing
+        List<LocalDate> holidays = new ArrayList<>();
+        holidays.add(LocalDate.of(2024, 1, 11));
+        holidays.add(LocalDate.of(2024, 1, 16));
+
+        System.out.println(addBusinessDays(today, 5, Optional.of(holidays)));
+
+        System.out.println(subtractBusinessDays(today, 5, Optional.empty()));
+        System.out
+                .println(subtractBusinessDays(today, 5, Optional.of(holidays)));
+
+        System.out.println(countBusinessDaysBetween_Java8(today,
+                today.plusDays(20), Optional.empty()).size());
+       /* System.out.println(countBusinessDaysBetween_Java9(today,
+                today.plusDays(20), Optional.of(holidays)).size());*/
+    }
+
+    private static LocalDate addBusinessDays(final LocalDate localDate,
+                                             int days, final Optional<List<LocalDate>> holidays) {
+        if (localDate == null || days <= 0) {
+            throw new IllegalArgumentException(
+                    "Invalid method argument(s) to addBusinessDays(" + localDate
+                            + "," + days + "," + holidays + ")");
+        }
+
+        Predicate<LocalDate> isHoliday = date -> holidays.isPresent()
+                && holidays.get()
+                .contains(date);
+
+        Predicate<LocalDate> isWeekend = date -> date
+                .getDayOfWeek() == DayOfWeek.SATURDAY
+                || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+
+        LocalDate result = localDate;
+        while (days > 0) {
+            result = result.plusDays(1);
+            if (isHoliday.or(isWeekend)
+                    .negate()
+                    .test(result)) {
+                days--;
+            }
+        }
+        return result;
+    }
+
+    private static LocalDate subtractBusinessDays(final LocalDate localDate,
+                                                  int days, final Optional<List<LocalDate>> holidays) {
+
+        if (localDate == null || days <= 0) {
+            throw new IllegalArgumentException(
+                    "Invalid method argument(s) to addBusinessDays(" + localDate
+                            + "," + days + "," + holidays + ")");
+        }
+
+        Predicate<LocalDate> isHoliday = date -> holidays.isPresent()
+                && holidays.get()
+                .contains(date);
+
+        Predicate<LocalDate> isWeekend = date -> date
+                .getDayOfWeek() == DayOfWeek.SATURDAY
+                || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+
+        LocalDate result = localDate;
+        while (days > 0) {
+            result = result.minusDays(1);
+            if (isHoliday.or(isWeekend)
+                    .negate()
+                    .test(result)) {
+                days--;
+            }
+        }
+        return result;
+    }
+
+    private static List<LocalDate> countBusinessDaysBetween_Java8(
+            final LocalDate startDate, final LocalDate endDate,
+            final Optional<List<LocalDate>> holidays) {
+        // Validate method arguments
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException(
+                    "Invalid method argument(s) to countBusinessDaysBetween ("
+                            + startDate + "," + endDate + "," + holidays + ")");
+        }
+
+        // Predicate 1 : Is a given date is holiday
+        Predicate<LocalDate> isHoliday = date -> holidays.isPresent()
+                && holidays.get()
+                .contains(date);
+
+        // Predicate 2 : Is a given date is weekday
+        Predicate<LocalDate> isWeekend = date -> date
+                .getDayOfWeek() == DayOfWeek.SATURDAY
+                || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+
+        // Get all days between two dates
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+
+        // Iterate over stream of all dates and check each day against any weekday or
+        // holiday
+        return Stream.iterate(startDate, date -> date.plusDays(1))
+                .limit(daysBetween)
+                .filter(isHoliday.or(isWeekend)
+                        .negate())
+                .collect(Collectors.toList());
+    }
